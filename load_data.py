@@ -55,7 +55,8 @@ def label2id():
     label_id_dict = dict(zip(unique_tags, range(1, len(unique_tags) + 1)))
 
     with open("%s_label2id.json" % event_type, "w", encoding="utf-8") as g:
-        g.write(json.dumps(label_id_dict, ensure_ascii=False, indent=2))
+        json.dump(label_id_dict, g, ensure_ascii=False, indent=2)
+        # g.write(json.dumps(label_id_dict, ensure_ascii=False, indent=2))
 
 
 if __name__ == '__main__':

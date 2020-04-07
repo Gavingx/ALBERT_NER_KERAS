@@ -66,7 +66,7 @@ def build_model(max_para_length, n_tags):
     # LSTM model
     lstm = Bidirectional(LSTM(units=128, return_sequences=True), name="bi_lstm")(bert_output)
     drop = Dropout(0.1, name="dropout")(lstm)
-    dense = TimeDistributed(Dense(n_tags, activation="softmax"), name="time_distributed")(drop)
+    dense = TimeDistributed(Dense(n_tags, activation="softmax"), name="time_distributed")(drop) # edit by gavin: TimeDistributed层给予了模型一种一对多，多对多的能力 https://blog.csdn.net/u012193416/article/details/79477220
     crf = CRF(n_tags)
     out = crf(dense)
     model = Model(inputs=bert_output, outputs=out)
@@ -90,7 +90,7 @@ def train_model():
 
     # 模型训练
     model = build_model(MAX_SEQ_LEN, len(label_id_dict.keys())+1)
-    history = model.fit(train_x, train_y, validation_data=(dev_x, dev_y), batch_size=16, epochs=10)
+    history = model.fit(train_x, train_y, validation_data=(dev_x, dev_y), batch_size=32, epochs=10)
 
     model.save("%s_ner.h5" % event_type)
 

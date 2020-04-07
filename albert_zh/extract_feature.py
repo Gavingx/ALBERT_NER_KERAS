@@ -48,7 +48,7 @@ class BertVector:
         elif pooling_strategy == "REDUCE_MEAN_MAX":
             pooling_strategy = args.PoolingStrategy.REDUCE_MEAN_MAX
 
-        self.graph_path = optimize_graph(pooling_strategy=pooling_strategy, max_seq_len=self.max_seq_length)
+        self.graph_path = optimize_graph(pooling_strategy=pooling_strategy, max_seq_len=self.max_seq_length, verbose=True)
 
         self.tokenizer = tokenization.FullTokenizer(vocab_file=args.vocab_file, do_lower_case=True)
         self.batch_size = batch_size
@@ -56,7 +56,7 @@ class BertVector:
         self.input_queue = Queue(maxsize=1)
         self.output_queue = Queue(maxsize=1)
         self.predict_thread = Thread(target=self.predict_from_queue, daemon=True)
-        self.predict_thread.start()
+        self.predict_thread.start() # edit by gavin: 创建一个线程
 
     def get_estimator(self):
         from tensorflow.python.estimator.estimator import Estimator
@@ -66,7 +66,7 @@ class BertVector:
         def model_fn(features, labels, mode, params):
             with tf.gfile.GFile(self.graph_path, 'rb') as f:
                 graph_def = tf.GraphDef()
-                graph_def.ParseFromString(f.read())
+                graph_def.ParseFromString(f.read()) # edit by gavin: 加载模型中的图
 
             input_names = ['input_ids', 'input_mask', 'input_type_ids']
 
@@ -79,9 +79,9 @@ class BertVector:
             })
 
         config = tf.ConfigProto()
-        config.gpu_options.allow_growth = True
+        config.gpu_options.allow_growth = True # edit by gavin: 动态申请显存
         config.gpu_options.per_process_gpu_memory_fraction = self.gpu_memory_fraction
-        config.log_device_placement = False
+        config.log_device_placement = True # edit by gavin 打印设备分配日志
         config.graph_options.optimizer_options.global_jit_level = tf.OptimizerOptions.ON_1
 
         return Estimator(model_fn=model_fn, config=RunConfig(session_config=config),

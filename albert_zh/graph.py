@@ -23,7 +23,7 @@ def set_logger(context, verbose=False):
     logger = logging.getLogger(context)
     logger.setLevel(logging.DEBUG if verbose else logging.INFO)
     formatter = logging.Formatter(
-        '%(levelname)-.1s:' + context + ':[%(filename).5s:%(funcName).3s:%(lineno)3d]:%(message)s', datefmt=
+        '%(levelname)s-' + context + '[%(filename)s-%(funcName)s-%(lineno)3d]-%(asctime)s------%(message)s', datefmt=
         '%m-%d %H:%M:%S')
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG if verbose else logging.INFO)
@@ -39,7 +39,7 @@ def optimize_graph(logger=None, verbose=False, pooling_strategy=PoolingStrategy.
     try:
         # we don't need GPU for optimizing the graph
         tf = import_tf(device_id=0, verbose=verbose)
-        from tensorflow.python.tools.optimize_for_inference_lib import optimize_for_inference
+        from tensorflow.python.tools.optimize_for_inference_lib import optimize_for_inference # # edit by gavin: optimize_for_inference: 删除输入和输出节点之间所有不需要的节点
 
         # allow_soft_placement:自动选择运行设备
         config = tf.ConfigProto(allow_soft_placement=True)
@@ -48,17 +48,18 @@ def optimize_graph(logger=None, verbose=False, pooling_strategy=PoolingStrategy.
         logger.info('model config: %s' % config_fp)
 
         # 加载bert配置文件
-        with tf.gfile.GFile(config_fp, 'r') as f:
+        with tf.gfile.GFile(config_fp, 'r') as f: # edit by gavin: 获取文本操作句柄，类似于python提供的文本操作open()函数，filename是要打开的文件名，mode是以何种方式去读写，将会返回一个文本操作句柄
             bert_config = modeling.BertConfig.from_dict(json.load(f))
 
         logger.info('build graph...')
-        # input placeholders, not sure if they are friendly to XLA
+        # input placeholders, not sure if they are friendly to XLA # edit by gavin: tensorflow xla 可以显著提升训练速度
         input_ids = tf.placeholder(tf.int32, (None, max_seq_len), 'input_ids')
         input_mask = tf.placeholder(tf.int32, (None, max_seq_len), 'input_mask')
         input_type_ids = tf.placeholder(tf.int32, (None, max_seq_len), 'input_type_ids')
 
         # xla加速
-        jit_scope = tf.contrib.compiler.jit.experimental_jit_scope if args.xla else contextlib.suppress
+        # edit by gavin: try:except也可以被替换为contextlib.suppress(),以更显式地抑制with块中产生某一类异常。
+        jit_scope = tf.contrib.compiler.jit.experimental_jit_scope if args.xla else contextlib.suppress # edit by gavin: tf.contrib.compiler.jit.experimental_jit_scope: XLA提供了AOT(提前编译)和JIT(即时编译)两种方式。这两种方式都可用来加速
 
         with jit_scope():
             input_tensors = [input_ids, input_mask, input_type_ids]
@@ -119,7 +120,7 @@ def optimize_graph(logger=None, verbose=False, pooling_strategy=PoolingStrategy.
                 else:
                     raise NotImplementedError()
 
-            pooled = tf.identity(pooled, 'final_encodes')
+            pooled = tf.identity(pooled, 'final_encodes') # edit by gavin: 将x的值赋给y
 
             output_tensors = [pooled]
             tmp_g = tf.get_default_graph().as_graph_def()

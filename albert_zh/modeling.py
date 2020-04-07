@@ -344,7 +344,7 @@ def get_assignment_map_from_checkpoint(tvars, init_checkpoint):
   name_to_variable = collections.OrderedDict()
   for var in tvars:
     name = var.name
-    m = re.match("^(.*):\\d+$", name)
+    m = re.match("^(.*):\\d+$", name) # edit by gavin: m.group(1): 匹配第一个括号的内容。m.group(0): 匹配全部内容
     if m is not None:
       name = m.group(1)
     name_to_variable[name] = var
